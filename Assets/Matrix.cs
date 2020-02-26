@@ -16,12 +16,19 @@ public class Matrix : MonoBehaviour
     private int posX = 0;
     private int posY = 0;
     private int value = 2;
+    private int playsLeft = 0;
     private int emptySpaces = 16;
+    private bool gameOver = false;
+    private bool block2048 = false;
 
     public TextMeshProUGUI[] line0 = new TextMeshProUGUI[4];
     public TextMeshProUGUI[] line1 = new TextMeshProUGUI[4];
     public TextMeshProUGUI[] line2 = new TextMeshProUGUI[4];
     public TextMeshProUGUI[] line3 = new TextMeshProUGUI[4];
+
+    public TextMeshProUGUI winText;
+    public TextMeshProUGUI gameOverText;
+    public GameObject gameOverScreen;
 
     void Start()
     {
@@ -32,30 +39,111 @@ public class Matrix : MonoBehaviour
 
     void Update()
     {
-        SearchEmptySpaces();
-
-        if (Input.GetKeyDown(KeyCode.E))
+        if(gameOver == true)
         {
-            GenerateBlock();
+            StopGame();
         }
 
-        if(Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.A))
+        if (emptySpaces == 0)
         {
-            MoveLeft();
-            JoinBlocksLeft();
-            MoveLeft();
-            GenerateBlock();
-            ChangeMatrix();
+            if (playsLeft == 0) // O JOGO TERMINA QUANDO AINDA DÁ PARA MOVER BLOCOS
+            {
+                gameOver = true;
+            }
+        }
+        else if(block2048 == true)
+        {
+            gameOver = true;
         }
 
-        if (Input.GetKeyDown(KeyCode.RightArrow) || Input.GetKeyDown(KeyCode.D))
+        if (gameOver == false)
         {
-            MoveRight();
-            JoinBlocksRight();
-            MoveRight();
-            GenerateBlock();
-            ChangeMatrix();
-        } 
+            SearchEmptySpaces();
+
+            if (Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.A))
+            {
+                MoveLeft();
+                JoinBlocksLeft();
+                MoveLeft();
+                GenerateBlock();
+                ChangeMatrix();
+                CanJoinBlocks();
+                Debug.Log(playsLeft);
+            }
+
+            if (Input.GetKeyDown(KeyCode.RightArrow) || Input.GetKeyDown(KeyCode.D))
+            {
+                MoveRight();
+                JoinBlocksRight();
+                MoveRight();
+                GenerateBlock();
+                ChangeMatrix();
+                CanJoinBlocks();
+                Debug.Log(playsLeft);
+            }
+
+            if (Input.GetKeyDown(KeyCode.UpArrow) || Input.GetKeyDown(KeyCode.W))
+            {
+                MoveUp();
+                JoinBlocksUp();
+                MoveUp();
+                GenerateBlock();
+                ChangeMatrix();
+                CanJoinBlocks();
+                Debug.Log(playsLeft);
+            }
+
+            if (Input.GetKeyDown(KeyCode.DownArrow) || Input.GetKeyDown(KeyCode.S))
+            {
+                MoveDown();
+                JoinBlocksDown();
+                MoveDown();
+                GenerateBlock();
+                ChangeMatrix();
+                CanJoinBlocks();
+                Debug.Log(playsLeft);
+            }
+            
+        }
+    }
+
+    private void ResetMatrix()
+    {
+        for (int i = 0; i < 4; i++)
+        {
+            for (int j = 0; j < 4; j++)
+            {
+                matrix[i, j] = 0;
+            }
+        }
+    }
+
+    public void NewGame()
+    {
+        emptySpaces = 16;
+        ResetMatrix();
+        block2048 = false;
+        gameOver = false;
+        winText.gameObject.SetActive(false);
+        gameOverText.gameObject.SetActive(false);
+        gameOverScreen.gameObject.SetActive(false);
+        GenerateBlock();
+        GenerateBlock();
+        ChangeMatrix();
+    }
+
+    private void StopGame()
+    {
+        if (block2048 == true)
+        {
+            winText.gameObject.SetActive(true);
+        }
+        else
+        {
+            gameOverText.gameObject.SetActive(true);
+        }
+
+        gameOverScreen.gameObject.SetActive(true);
     }
 
     private void ChangeMatrix()
@@ -170,6 +258,49 @@ public class Matrix : MonoBehaviour
                 if(matrix[i, j] == 0)
                 {
                     emptySpaces++;
+                }
+            }
+        }
+    }
+
+    private void CanJoinBlocks()
+    {
+        playsLeft = 0;
+
+        for(int i = 0; i < 4; i++)
+        {
+            for(int j = 0; j < 4; j++)
+            {
+                if(j < 3)
+                {
+                    if(matrix[i, j + 1] == matrix[i, j])
+                    {
+                        playsLeft++;
+                    }
+                }
+
+                if (j > 0)
+                {
+                    if (matrix[i, j - 1] == matrix[i, j])
+                    {
+                        playsLeft++;
+                    }
+                }
+
+                if (i > 0)
+                {
+                    if (matrix[i - 1, j] == matrix[i, j])
+                    {
+                        playsLeft++;
+                    }
+                }
+
+                if (i < 3)
+                {
+                    if (matrix[i + 1, j] == matrix[i, j])
+                    {
+                        playsLeft++;
+                    }
                 }
             }
         }
@@ -293,11 +424,89 @@ public class Matrix : MonoBehaviour
 
     private void MoveUp()
     {
-        
+        for (int i = 0; i < 4; i++)
+        {
+            for (int j = 0; j < 4; j++)
+            {
+                if (matrix[j, i] == 0 && j != 3)
+                {
+                    for (int k = j + 1; k < 4; k++)
+                    {
+                        if (matrix[k, i] != 0)
+                        {
+                            matrix[j, i] = matrix[k, i];
+                            matrix[k, i] = 0;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
     }
 
     private void JoinBlocksUp()
     {
-        
+        for (int i = 0; i < 4; i++)
+        {
+            for (int j = 0; j < 4; j++)
+            {
+                if (matrix[j, i] != 0 && j != 3)
+                {
+                    if (matrix[j, i] == matrix[j + 1, i])
+                    {
+                        matrix[j, i] *= 2;
+
+                        ExecuteJoinAnimation(j, i);
+
+                        matrix[j + 1, i] = 0;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    private void MoveDown()
+    {
+        for (int i = 3; i >= 0; i--)
+        {
+            for (int j = 3; j >= 0; j--)
+            {
+                if (matrix[j, i] == 0 && j != 0)
+                {
+                    for (int k = j - 1; k >= 0; k--)
+                    {
+                        if (matrix[k, i] != 0)
+                        {
+                            matrix[j, i] = matrix[k, i];
+                            matrix[k, i] = 0;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private void JoinBlocksDown()
+    {
+        for (int i = 3; i >= 0; i--)
+        {
+            for (int j = 3; j >= 0; j--)
+            {
+                if (matrix[j, i] != 0 && j != 0)
+                {
+                    if (matrix[j, i] == matrix[j - 1, i])
+                    {
+                        matrix[j, i] *= 2;
+
+                        ExecuteJoinAnimation(j, i);
+
+                        matrix[j - 1, i] = 0;
+                        break;
+                    }
+                }
+            }
+        }
     }
 }
